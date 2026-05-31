@@ -36,17 +36,16 @@ export default function App() {
   const [customNames, setCustomNames] = useState(() => {
     try { const s = localStorage.getItem(NAMES_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
-  const [hoveredId, setHoveredId] = useState(null);
   const [justCompleted, setJustCompleted] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
 
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(completed)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(completed)); } catch { /* ignore */ }
   }, [completed]);
 
   useEffect(() => {
-    try { localStorage.setItem(NAMES_KEY, JSON.stringify(customNames)); } catch {}
+    try { localStorage.setItem(NAMES_KEY, JSON.stringify(customNames)); } catch { /* ignore */ }
   }, [customNames]);
 
   const toggle = (id) => {
@@ -76,6 +75,38 @@ export default function App() {
     if (e.key === "Escape") setEditingId(null);
   };
 
+  const exportData = () => {
+    const data = { completed, customNames };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "gen-ai-e2-backup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importData = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target.result);
+        if (imported.completed && imported.customNames) {
+          setCompleted(imported.completed);
+          setCustomNames(imported.customNames);
+        } else {
+          alert("Invalid backup format.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error reading backup file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const totalXP = courses.filter(c => completed.includes(c.id)).reduce((s, c) => s + c.xp, 0);
   const maxXP = courses.reduce((s, c) => s + c.xp, 0);
   const pct = Math.round((completed.length / courses.length) * 100);
@@ -98,7 +129,9 @@ export default function App() {
         
         .hero { 
           background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.08) 0%, transparent 60%),
-                      radial-gradient(ellipse 50% 40% at 80% 20%, rgba(59,130,246,0.06) 0%, transparent 50%),
+
+(Showing lines 39-124 of 721. Use offset=125 to continue.)
+</content>                      radial-gradient(ellipse 50% 40% at 80% 20%, rgba(59,130,246,0.06) 0%, transparent 50%),
                       #ffffff;
           padding: 56px 32px 48px;
           border-bottom: 1px solid rgba(0,0,0,0.07);
@@ -521,6 +554,30 @@ export default function App() {
           opacity: 0.4;
           flex-shrink: 0;
         }
+
+        .hero-actions {
+          display: flex;
+          gap: 10px;
+          justify-content: center;
+          margin-top: 20px;
+        }
+
+        .btn-secondary {
+          background: rgba(124, 58, 237, 0.08);
+          border: 1px solid rgba(124, 58, 237, 0.1);
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 12px;
+          color: #7c3aed;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+          background: rgba(124, 58, 237, 0.15);
+          border-color: rgba(124, 58, 237, 0.3);
+        }
       `}</style>
 
       <div className="portal-root">
@@ -555,9 +612,16 @@ export default function App() {
               <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
             </div>
             <div className="progress-labels">
-              <span>0 / {courses.length} courses</span>
+              <span>{completed.length} / {courses.length} courses</span>
               <span>{maxXP.toLocaleString()} XP total</span>
             </div>
+          </div>
+          <div className="hero-actions">
+            <button className="btn-secondary" onClick={exportData}>Export Backup</button>
+            <label className="btn-secondary">
+              Import Backup
+              <input type="file" accept=".json" onChange={importData} style={{ display: 'none' }} />
+            </label>
           </div>
         </div>
 
@@ -581,14 +645,13 @@ export default function App() {
               const isDone = completed.includes(course.id);
               const cat = categoryColors[course.category];
               return (
-                <div
-                  key={course.id}
-                  className={`course-row ${isDone ? "done" : ""} ${justCompleted === course.id ? "just-done" : ""}`}
-                  onClick={() => toggle(course.id)}
-                  onMouseEnter={() => setHoveredId(course.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                >
-                  <div className="course-num">{String(i + 1).padStart(2, "0")}</div>
+                  <div
+                    key={course.id}
+                    className={`course-row ${isDone ? "done" : ""} ${justCompleted === course.id ? "just-done" : ""}`}
+                    onClick={() => toggle(course.id)}
+                  >
+                    <div className="course-num">{String(i + 1).padStart(2, "0")}</div>
+
 
                   <div className="checkbox">
                     <svg className="check-icon" width="11" height="9" viewBox="0 0 11 9" fill="none">
